@@ -1,7 +1,7 @@
 # Pomodoro Timer
 
 ## Изображение
-![image](https://github.com/user-attachments/assets/0b2fdb1e-d15a-44b0-8130-242bf87d58ee) <br> Рисунок 1. Интерфейс программы
+![image](https://github.com/user-attachments/assets/dca2a00f-eadb-43f2-ac7c-0fd232f33d5b) <br> Рисунок 1. Интерфейс программы
 
 ## Описание
 
