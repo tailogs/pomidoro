@@ -11,7 +11,7 @@ void StopTimer(HWND);
 void UpdateTimeDisplay(HWND, int);
 void ShowAboutDialog(HWND);
 
-HFONT hFont;
+HFONT hFont16, hFont32, hFont64;
 HBRUSH hBrush;
 COLORREF bgColor = RGB(30, 30, 30);
 COLORREF textColor = RGB(200, 200, 200);
@@ -25,6 +25,10 @@ int breakInterval = BREAK_DEFAULT * 60 * 1000;       // по умолчанию 
 NOTIFYICONDATA nid; // Для системного трея
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    (void)hPrevInstance;
+    (void)lpCmdLine;
+    (void)nCmdShow;
+
     MSG msg;
     WNDCLASS wc = {0};
     HWND hwnd;
@@ -46,15 +50,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     hwnd = CreateWindow(
         "PomodoroClass",
         "Pomodoro Timer",
-        WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX | WS_VISIBLE,
-        CW_USEDEFAULT, CW_USEDEFAULT, 320, 350,
+        ((WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX) | WS_VISIBLE),
+        CW_USEDEFAULT, CW_USEDEFAULT, 280, 280,
         NULL, NULL, hInstance, NULL
     );
 
     HMENU hMenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MYMENU));
     SetMenu(hwnd, hMenu);
 
-    hFont = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Segoe UI");
+    hFont16 = CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Segoe UI");
+    hFont32 = CreateFont(32, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Segoe UI");
+    // Создание шрифта
+    hFont64 = CreateFont(
+        64,                        // Высота шрифта
+        0,                         // Ширина шрифта (0 означает автоматическая ширина)
+        0,                         // Угол наклона шрифта
+        0,                         // Угол наклона шрифта
+        FW_BOLD,                   // Толщина шрифта
+        FALSE,                     // Курсив
+        FALSE,                     // Подчеркивание
+        FALSE,                     // Перечеркивание
+        ANSI_CHARSET,              // Набор символов
+        OUT_DEFAULT_PRECIS,        // Точность вывода
+        CLIP_DEFAULT_PRECIS,       // Точность обрезки
+        DEFAULT_QUALITY,           // Качество вывода
+        DEFAULT_PITCH | FF_SWISS,  // Стиль шрифта и семья шрифтов
+        "Segoe UI"                 // Название шрифта
+    );
     hBrush = CreateSolidBrush(bgColor);
 
     // Инициализация иконки трея
@@ -73,7 +95,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         DispatchMessage(&msg);
     }
 
-    DeleteObject(hFont);
+    DeleteObject(hFont16);
+    DeleteObject(hFont32);
+    DeleteObject(hFont64);
     DeleteObject(hBrush);
 
     return msg.wParam;
@@ -84,21 +108,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
     switch (msg) {
         case WM_CREATE:
-            hToggleButton = CreateWindow("BUTTON", "Start", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 150, 220, 100, 30, hwnd, (HMENU)IDM_TOGGLE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-            hStatusLabel = CreateWindow("STATIC", "Status: Waiting", WS_VISIBLE | WS_CHILD, 50, 180, 120, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-            hTimeLabel = CreateWindow("STATIC", "00:00", WS_VISIBLE | WS_CHILD, 50, 50, 60, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            hToggleButton = CreateWindow("BUTTON", "Start", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON | SS_CENTER, 180, 180, 60, 30, hwnd, (HMENU)IDM_TOGGLE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            hTimeLabel = CreateWindow("STATIC", "", WS_VISIBLE | WS_CHILD | SS_CENTER | SS_CENTERIMAGE, 10, 10, 255, 60, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            hStatusLabel = CreateWindow("STATIC", "Status: Waiting", WS_VISIBLE | WS_CHILD | SS_CENTER, 30, 180, 140, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            hTimeLabel = CreateWindow("STATIC", "00:00", WS_VISIBLE | WS_CHILD | SS_CENTER, 10, 10, 255, 60, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
-            CreateWindow("STATIC", "Pomodoro (min):", WS_VISIBLE | WS_CHILD, 50, 90, 120, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-            hPomodoroInput = CreateWindow("EDIT", "25", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_NUMBER, 170, 90, 50, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            CreateWindow("STATIC", "Pomodoro (min):", WS_VISIBLE | WS_CHILD, 30, 90, 140, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            hPomodoroInput = CreateWindow("EDIT", "25", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_NUMBER | ES_CENTER, 180, 90, 60, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
-            CreateWindow("STATIC", "Break (min):", WS_VISIBLE | WS_CHILD, 50, 130, 120, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-            hBreakInput = CreateWindow("EDIT", "5", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_NUMBER, 170, 130, 50, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            CreateWindow("STATIC", "Break (min):", WS_VISIBLE | WS_CHILD, 30, 130, 140, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            hBreakInput = CreateWindow("EDIT", "5", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_NUMBER | ES_CENTER, 180, 130, 60, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
-            SendMessage(hToggleButton, WM_SETFONT, (WPARAM)hFont, TRUE);
-            SendMessage(hStatusLabel, WM_SETFONT, (WPARAM)hFont, TRUE);
-            SendMessage(hTimeLabel, WM_SETFONT, (WPARAM)hFont, TRUE);
-            SendMessage(hPomodoroInput, WM_SETFONT, (WPARAM)hFont, TRUE);
-            SendMessage(hBreakInput, WM_SETFONT, (WPARAM)hFont, TRUE);
+            SendMessage(hToggleButton, WM_SETFONT, (WPARAM)hFont16, TRUE);
+            SendMessage(hStatusLabel, WM_SETFONT, (WPARAM)hFont16, TRUE);
+            SendMessage(hTimeLabel, WM_SETFONT, (WPARAM)hFont64, TRUE);
+            SendMessage(hPomodoroInput, WM_SETFONT, (WPARAM)hFont16, TRUE);
+            SendMessage(hBreakInput, WM_SETFONT, (WPARAM)hFont16, TRUE);
             break;
 
         case WM_TIMER:
@@ -190,6 +215,51 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             }
             break;
 
+        case WM_SIZE:
+            // Изменение размера шрифта для hTimeLabel
+            {
+                RECT rect;
+                GetClientRect(hTimeLabel, &rect);
+                int newFontSize = min(rect.right - rect.left, rect.bottom - rect.top) / 1.1;
+                if (newFontSize < 10) newFontSize = 10; // Минимальный размер шрифта
+                
+                DeleteObject(hFont64); // Удаление старого шрифта
+                hFont64 = CreateFont(
+                    newFontSize,               // Высота шрифта
+                    0,                         // Ширина шрифта (0 означает автоматическая ширина)
+                    0,                         // Угол наклона шрифта
+                    0,                         // Угол наклона шрифта
+                    FW_BOLD,                   // Толщина шрифта
+                    FALSE,                     // Курсив
+                    FALSE,                     // Подчеркивание
+                    FALSE,                     // Перечеркивание
+                    ANSI_CHARSET,              // Набор символов
+                    OUT_DEFAULT_PRECIS,        // Точность вывода
+                    CLIP_DEFAULT_PRECIS,       // Точность обрезки
+                    DEFAULT_QUALITY,           // Качество вывода
+                    DEFAULT_PITCH | FF_SWISS,  // Стиль шрифта и семья шрифтов
+                    "Segoe UI"                 // Название шрифта
+                );
+                SendMessage(hTimeLabel, WM_SETFONT, (WPARAM)hFont64, TRUE);
+            }
+            break;
+
+        case WM_PAINT:
+            {
+                PAINTSTRUCT ps;
+                HDC hdc = BeginPaint(hwnd, &ps);
+                SetBkMode(hdc, TRANSPARENT); // Прозрачный фон
+                SetTextColor(hdc, textColor);
+
+                // Пример для статического элемента
+                RECT rect;
+                GetClientRect(hTimeLabel, &rect);
+                DrawText(hdc, "00:00", -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+                EndPaint(hwnd, &ps);
+            }
+            break;
+
         case WM_CLOSE:
             // Скрытие окна вместо его закрытия
             ShowWindow(hwnd, SW_HIDE);
@@ -215,6 +285,7 @@ void StopTimer(HWND hwnd) {
 }
 
 void UpdateTimeDisplay(HWND hwnd, int timeMs) {
+    (void)hwnd; // Явное игнорирование неиспользуемого параметра
     int minutes = timeMs / 60000;
     int seconds = (timeMs % 60000) / 1000;
     char timeText[10];
