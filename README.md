@@ -1,7 +1,8 @@
 # Pomodoro Timer
 
 ## Изображение
-![image](https://github.com/user-attachments/assets/dca2a00f-eadb-43f2-ac7c-0fd232f33d5b) <br> Рисунок 1. Интерфейс программы
+
+![image](https://github.com/user-attachments/assets/e0875028-eec4-49d5-b66b-a16f0584d0c7) <br> Рисунок 1. Интерфейс программы
 
 ## Описание
 
@@ -64,6 +65,7 @@ make clean
 ## Изменения версий
 - **v1.0**: Первая версия с базовыми функциями и интеграцией с системным треем.
 - **v1.0.1**: Улучшен UI интерфейс.
+- **v1.1.1**: Изменен интерфейс программы на темную тему и изменен дизайн элементов.
 
 ## Лицензия
 
@@ -71,4 +73,4 @@ make clean
 
 ---
 
-Разработано [Taillogs](https://github.com/tailogs).
+Разработано [Tailogs](https://github.com/tailogs).

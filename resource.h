@@ -1,3 +1,8 @@
+// resources.h
+
+#ifndef RESOURCES_H
+#define RESOURCES_H
+
 #define IDI_ICON1 101
 #define IDR_MYMENU 102
 #define ID_FILE_EXIT 40001
@@ -9,3 +14,5 @@
 #define POMODORO_DEFAULT 25 // по умолчанию 25 минут
 #define BREAK_DEFAULT 5     // по умолчанию 5 минут
 #define TIMER_UPDATE_INTERVAL 1000 // Обновление каждые 1 секунда
+
+#endif // RESOURCES_H

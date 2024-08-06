@@ -5,6 +5,8 @@
 #include <shellapi.h> // Для системного трея
 #include "resource.h"
 
+#define VERSION "1.1.1"
+
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 void StartTimer(HWND, int);
 void StopTimer(HWND);
@@ -21,6 +23,8 @@ bool isPomodoro = true;
 int remainingTime = 0;
 int pomodoroInterval = POMODORO_DEFAULT * 60 * 1000; // по умолчанию 25 минут
 int breakInterval = BREAK_DEFAULT * 60 * 1000;       // по умолчанию 5 минут
+
+char textToogleButton[6] = "Start";
 
 NOTIFYICONDATA nid; // Для системного трея
 
@@ -108,7 +112,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
     switch (msg) {
         case WM_CREATE:
-            hToggleButton = CreateWindow("BUTTON", "Start", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON | SS_CENTER, 180, 180, 60, 30, hwnd, (HMENU)IDM_TOGGLE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            hToggleButton = CreateWindow("BUTTON", "Start", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON | SS_CENTER | BS_OWNERDRAW, 180, 180, 60, 30, hwnd, (HMENU)IDM_TOGGLE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
             hTimeLabel = CreateWindow("STATIC", "", WS_VISIBLE | WS_CHILD | SS_CENTER | SS_CENTERIMAGE, 10, 10, 255, 60, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
             hStatusLabel = CreateWindow("STATIC", "Status: Waiting", WS_VISIBLE | WS_CHILD | SS_CENTER, 30, 180, 140, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
             hTimeLabel = CreateWindow("STATIC", "00:00", WS_VISIBLE | WS_CHILD | SS_CENTER, 10, 10, 255, 60, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
@@ -161,7 +165,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 case IDM_TOGGLE:
                     if (isRunning) {
                         StopTimer(hwnd);
-                        SetWindowText(hToggleButton, "Start");
+                        strcpy(textToogleButton, "Start");
                         SetWindowText(hStatusLabel, "Status: Stopped");
                     } else {
                         char pomodoroText[10], breakText[10];
@@ -178,10 +182,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                             remainingTime = breakInterval;
                         }
                         StartTimer(hwnd, TIMER_UPDATE_INTERVAL);
-                        SetWindowText(hToggleButton, "Stop");
+                        strcpy(textToogleButton, "Stop");
                     }
                     UpdateTimeDisplay(hwnd, remainingTime);
                     isRunning = !isRunning;
+
+                    // Принудительная перерисовка кнопки
+                    InvalidateRect(hToggleButton, NULL, TRUE);
+                    UpdateWindow(hToggleButton);
                     break;
                 case ID_FILE_EXIT:
                     Shell_NotifyIcon(NIM_DELETE, &nid); // Удаление иконки трея
@@ -196,7 +204,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     break;
             }
             break;
-
         case WM_USER + 1: // Сообщение из трея
             if (lParam == WM_RBUTTONUP) {
                 HMENU hMenu = CreatePopupMenu();
@@ -260,6 +267,46 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             }
             break;
 
+        case WM_DRAWITEM: {
+                LPDRAWITEMSTRUCT dis = (LPDRAWITEMSTRUCT)lParam;
+                if (dis->CtlType == ODT_BUTTON) {
+                    HBRUSH hBrush = CreateSolidBrush(RGB(50, 50, 50));
+                    FillRect(dis->hDC, &dis->rcItem, hBrush);
+                    DeleteObject(hBrush);
+                    
+                    SetTextColor(dis->hDC, RGB(255, 255, 255));
+                    SetBkMode(dis->hDC, TRANSPARENT);
+                    
+                    if (dis->hwndItem == hToggleButton) {
+                        DrawText(dis->hDC, textToogleButton, -1, &dis->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                    }
+                }
+            }
+            break;
+
+        case WM_CTLCOLORSTATIC: {
+                HDC hdc = (HDC)wParam;
+                SetBkColor(hdc, RGB(30, 30, 30));
+                SetTextColor(hdc, RGB(255, 255, 255));
+                return (INT_PTR)GetStockObject(NULL_BRUSH);
+            }
+            break;
+
+        case WM_CTLCOLORLISTBOX: {
+                HDC hdc = (HDC)wParam;
+                SetTextColor(hdc, RGB(255, 255, 255));
+                return (INT_PTR)GetStockObject(NULL_BRUSH);
+	        }
+	        break;
+
+	    case WM_CTLCOLOREDIT: {
+                HDC hdc = (HDC)wParam;
+                SetBkColor(hdc, RGB(30, 30, 30)); //  
+                SetTextColor(hdc, RGB(255, 255, 255)); //  
+                return (INT_PTR)GetStockObject(NULL_BRUSH);
+            }
+            break;
+
         case WM_CLOSE:
             // Скрытие окна вместо его закрытия
             ShowWindow(hwnd, SW_HIDE);
@@ -294,5 +341,7 @@ void UpdateTimeDisplay(HWND hwnd, int timeMs) {
 }
 
 void ShowAboutDialog(HWND hwnd) {
-    MessageBox(hwnd, "Pomodoro Timer v1.0\nA simple Pomodoro technique timer.\nDeveloper - Taillogs.", "About Pomodoro Timer", MB_OK | MB_ICONINFORMATION);
+    char message[256];
+    sprintf(message, "Pomodoro Timer %s\nA simple pomodoro technique timer.\nDeveloper - Tailogs.", VERSION);
+    MessageBox(hwnd, message, "About pomodoro timer", MB_OK | MB_ICONINFORMATION);
 }
