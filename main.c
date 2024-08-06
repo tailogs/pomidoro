@@ -24,6 +24,9 @@ int remainingTime = 0;
 int pomodoroInterval = POMODORO_DEFAULT * 60 * 1000; // по умолчанию 25 минут
 int breakInterval = BREAK_DEFAULT * 60 * 1000;       // по умолчанию 5 минут
 
+COLORREF currentBgColor = RGB(30, 30, 30);
+COLORREF currentTextColor = RGB(200, 200, 200);
+
 char textToogleButton[6] = "Start";
 
 NOTIFYICONDATA nid; // Для системного трея
@@ -191,14 +194,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     InvalidateRect(hToggleButton, NULL, TRUE);
                     UpdateWindow(hToggleButton);
                     break;
+                    
                 case ID_FILE_EXIT:
                     Shell_NotifyIcon(NIM_DELETE, &nid); // Удаление иконки трея
                     PostQuitMessage(0); // Завершение приложения
                     break;
+
                 case ID_TRAY_SHOW:
                     ShowWindow(hwnd, SW_RESTORE); // Восстановление окна
                     SetForegroundWindow(hwnd); // Активировать окно
                     break;
+
                 case ID_HELP_ABOUT:
                     ShowAboutDialog(hwnd);
                     break;
@@ -251,12 +257,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             }
             break;
 
-        case WM_PAINT:
-            {
+        case WM_PAINT: {
                 PAINTSTRUCT ps;
                 HDC hdc = BeginPaint(hwnd, &ps);
                 SetBkMode(hdc, TRANSPARENT); // Прозрачный фон
-                SetTextColor(hdc, textColor);
+
+                // Установка нового цвета фона
+                FillRect(hdc, &ps.rcPaint, hBrush);
+
+                // Установка нового цвета текста
+                SetTextColor(hdc, currentTextColor);
 
                 // Пример для статического элемента
                 RECT rect;
@@ -267,16 +277,28 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             }
             break;
 
+
         case WM_DRAWITEM: {
                 LPDRAWITEMSTRUCT dis = (LPDRAWITEMSTRUCT)lParam;
                 if (dis->CtlType == ODT_BUTTON) {
-                    HBRUSH hBrush = CreateSolidBrush(RGB(50, 50, 50));
+                    HBRUSH hBrush;
+                    COLORREF textColor;
+
+                    // Если кнопка нажата, используем другой цвет
+                    if (dis->itemState & ODS_SELECTED) {
+                        hBrush = CreateSolidBrush(RGB(100, 100, 100)); // Темно-серый цвет для нажатой кнопки
+                        textColor = RGB(255, 255, 255);
+                    } else {
+                        hBrush = CreateSolidBrush(RGB(50, 50, 50)); // Основной цвет кнопки
+                        textColor = RGB(255, 255, 255);
+                    }
+
                     FillRect(dis->hDC, &dis->rcItem, hBrush);
                     DeleteObject(hBrush);
-                    
-                    SetTextColor(dis->hDC, RGB(255, 255, 255));
+
+                    SetTextColor(dis->hDC, textColor);
                     SetBkMode(dis->hDC, TRANSPARENT);
-                    
+
                     if (dis->hwndItem == hToggleButton) {
                         DrawText(dis->hDC, textToogleButton, -1, &dis->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
                     }
@@ -301,11 +323,26 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	    case WM_CTLCOLOREDIT: {
                 HDC hdc = (HDC)wParam;
-                SetBkColor(hdc, RGB(30, 30, 30)); //  
-                SetTextColor(hdc, RGB(255, 255, 255)); //  
+                SetBkColor(hdc, currentBgColor);
+                SetTextColor(hdc, currentTextColor);
                 return (INT_PTR)GetStockObject(NULL_BRUSH);
             }
             break;
+
+        case WM_LBUTTONDOWN:
+                // Случайный выбор нового цвета фона и текста
+                currentBgColor = RGB(rand() % 256, rand() % 256, rand() % 256);
+                currentTextColor = RGB(rand() % 256, rand() % 256, rand() % 256);
+
+                // Обновление кисти и шрифта
+                DeleteObject(hBrush);
+                hBrush = CreateSolidBrush(currentBgColor);
+                
+                // Перерисовка окна для применения новых цветов
+                InvalidateRect(hwnd, NULL, TRUE);
+                UpdateWindow(hwnd);
+
+                break;
 
         case WM_CLOSE:
             // Скрытие окна вместо его закрытия
